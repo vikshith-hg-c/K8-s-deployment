@@ -32,7 +32,8 @@ else
     echo "$FILE does not exist. Running  script"
 fi
 
-
+sudo systemctl stop apparmor.service
+sudo systemctl disable apparmor.service
 # Create a file when this script is started to keep it from running
 # twice on same node
 sudo touch /k8scp_run
@@ -128,15 +129,24 @@ mkdir -p $HOME/.kube
 sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
+
+
+# Add Helm to make our life easier
+curl -fsSL -o- get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3/get_helm.sh | bash
+
+sleep 15
+
+
+
+
 # Use Cilium as the network plugin
 # Install the CLI first
 export CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/master/stable.txt)
 export CLI_ARCH=amd64
 
 # Ensure correct architecture
-if [ "$(uname -m)" = "aarch64" ]; then export CLI_ARCH=arm64; fi
-if [ "$(uname -m)" = "i386" || "$(uname -m)" = "i686" ]; then export CLI_ARCH=386; fi
-if [ "$(uname -m)" == "armv5*" || "$(uname -m)" == "armv6*" || "$(uname -m)" == "armv7*" ]; then export CLI_ARCH=arm fi
+if [[ "$(uname -m)" = "aarch64" ]]; then export CLI_ARCH=arm64; fi
+
 
 curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
 
@@ -161,16 +171,17 @@ cilium install
 
 echo
 sleep 3
-echo Cilium install finished. Continuing with script.
+echo Cilium install finished.
 echo
 
+echo '********************************************************'
+echo '********************************************************'
+echo
+echo Getting Details to add worker nodes
+echo '********************************************************'
+echo '********************************************************'
+echo
 
-# Add Helm to make our life easier
-curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-chmod 700 get_helm.sh
-./get_helm.sh
-
-sleep 15
 # Output the state of the cluster
 kubectl get node
 
@@ -180,8 +191,9 @@ echo
 echo
 echo '***************************'
 echo
-echo "Continue to the next step"
+echo "HURRAY"
 echo
 echo '***************************'
 echo
+
 
