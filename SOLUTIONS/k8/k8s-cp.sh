@@ -41,11 +41,26 @@ sudo touch /k8scp_run
 sudo apt-get update ; sudo apt-get upgrade -y
 
 # Install necessary software
+#sudo apt-get install -y apt-transport-https ca-certificates curl gpg // adm site 
 sudo apt-get install curl apt-transport-https vim git wget gnupg2 software-properties-common apt-transport-https ca-certificates -y
 
 # Add repo for Kubernetes
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+#curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
+
+#Download the public signing key for the Kubernetes package repositories. 
+#The same signing key is used for all repositories so you can disregard the version in the URL:
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+
+
+
+# Add the appropriate Kubernetes apt repository. Please note that this repository have packages only for Kubernetes 1.28; for other Kubernetes minor versions, you need to change the Kubernetes minor version in the URL to match your desired minor version (you should also check that you are reading the documentation for the version of Kubernetes that you plan to install).
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+
+# This overwrites any existing configuration in /etc/apt/sources.list.d/kubernetes.list
+#echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 # Install the Kubernetes software, and lock the version
 sudo apt-get update
@@ -95,8 +110,8 @@ sudo systemctl enable containerd
 
 
 #  Create the config file so no more errors
-# Install and configure crictl
-export VER="v1.26.0"
+# Install and configure crictl (provides a CLI for CRI-compatible container runtimes. This allows the CRI runtime developers to debug their runtime without needing to set up Kubernetes components.)
+export VER="v1.28.0"
 
 wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VER/crictl-$VER-linux-amd64.tar.gz
 
@@ -123,7 +138,10 @@ export CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cil
 export CLI_ARCH=amd64
 
 # Ensure correct architecture
-if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+if [ "$(uname -m)" = "aarch64" ]; then export CLI_ARCH=arm64; fi
+if [ "$(uname -m)" = "i386" || "$(uname -m)" = "i686" ]; then export CLI_ARCH=386; fi
+if [ "$(uname -m)" == "armv5*" || "$(uname -m)" == "armv6*" || "$(uname -m)" == "armv7*" ]; then export CLI_ARCH=arm fi
+
 curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
 
 # Make sure download worked
@@ -152,9 +170,9 @@ echo
 
 
 # Add Helm to make our life easier
-wget https://get.helm.sh/helm-v3.11.1-linux-amd64.tar.gz
-tar -xf helm-v3.11.1-linux-amd64.tar.gz
-sudo cp linux-amd64/helm /usr/local/bin/
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
 
 sleep 15
 # Output the state of the cluster
