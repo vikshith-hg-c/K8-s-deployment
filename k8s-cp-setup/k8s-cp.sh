@@ -132,7 +132,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 
 # Add Helm to make our life easier
-curl -fsSL -o- get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3/get_helm.sh | bash
+curl -fsSL -o- get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
 sleep 15
 
